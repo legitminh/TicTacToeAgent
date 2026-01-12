@@ -112,15 +112,15 @@ def playHumanAgentRL():
     loadedAgent0.explorationRate = 0
     aGameWithHuman(loadedAgent0, 1)
 
-# if __name__ == "__main__":
+if __name__ == "__main__":
     # trainAndExport()
-    # playHumanAgentRL()
+    playHumanAgentRL()
     
     
 
-if __name__ == "__main__":
-    env = Environment()
-    loadedAgent0 = AgentNN(0, env)
-    # loadedAgent0.exportJson("0_AgentNN.json")
-    print(loadedAgent0)
-    aGameWithHuman(loadedAgent0, 1)
+# if __name__ == "__main__":
+#     env = Environment()
+#     loadedAgent0 = AgentNN(0, env)
+#     # loadedAgent0.exportJson("0_AgentNN.json")
+#     print(loadedAgent0)
+#     aGameWithHuman(loadedAgent0, 1)
