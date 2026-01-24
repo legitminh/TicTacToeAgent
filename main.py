@@ -17,6 +17,8 @@ class AgentHuman(Agent):
     def act(self):
         action = int(input(f"Player {self.index} what is your move?: ").strip())
         return action
+    def action_failed(self):
+        print("Invalid action")
 
 def trainAndExport():
     # create two agents
@@ -37,12 +39,16 @@ def trainAndExport():
         env.reset()
         actionsIndex = random.randint(0,1)
         while env.checkWin() is None:
+            available_actions = env.availableActionsInEnv()
+            # tie
+            if action == len(available_actions)==0:
+                break
             actingAgent = agents[actionsIndex % 2]
             action = actingAgent.act()
-            # print("agent",actionsIndex,"action=", action)
-            # no action available
-            if action == None:
-                break
+
+            if action not in available_actions:
+                actingAgent.action_failed()
+                continue
 
             env.impacted(action, actingAgent.index)
             actionsIndex += 1
@@ -90,12 +96,16 @@ def aGameWithHuman(agent, humanIndex):
     humanAndAI = [human, agent]
     actionsIndex = random.randint(0,1)
     while env.checkWin() is None:
+        available_actions = env.availableActionsInEnv()
+        # tie
+        if len(available_actions)==0:
+            break
         actingAgent = humanAndAI[actionsIndex % 2]
         action = actingAgent.act()
 
-        # no action available
-        if action == None:
-            break
+        if action not in available_actions:
+            actingAgent.action_failed()
+            continue
 
         env.impacted(action, actingAgent.index)
         actionsIndex += 1
@@ -112,15 +122,13 @@ def playHumanAgentRL():
     loadedAgent0.explorationRate = 0
     aGameWithHuman(loadedAgent0, 1)
 
-if __name__ == "__main__":
-    # trainAndExport()
-    playHumanAgentRL()
-    
-    
-
 # if __name__ == "__main__":
-#     env = Environment()
-#     loadedAgent0 = AgentNN(0, env)
-#     # loadedAgent0.exportJson("0_AgentNN.json")
-#     print(loadedAgent0)
-#     aGameWithHuman(loadedAgent0, 1)
+#     # trainAndExport()
+#     playHumanAgentRL()
+
+if __name__ == "__main__":
+    env = Environment()
+    loadedAgent0 = AgentNN(0, env)
+    # loadedAgent0.exportJson("0_AgentNN.json")
+    # print(loadedAgent0)
+    aGameWithHuman(loadedAgent0, 1)

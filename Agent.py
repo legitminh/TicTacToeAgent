@@ -9,3 +9,13 @@ class Agent(ABC):
     @abstractmethod
     def act(self):
         pass
+    
+    @abstractmethod
+    def action_failed(self):
+        """
+        Docstring for action_failed
+        
+        :param self: Description
+        Invalid action callback
+        """
+        pass

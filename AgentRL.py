@@ -9,9 +9,9 @@ class AgentRL(Agent):
         self.policy = {} 
         self.play = []
         self.index = index
-        self.explorationRate = 0.5
+        self.explorationRate = 0.5 #chaoticity
         self.discountFactor = 0.75
-        self.learningRate = 0.9
+        self.learningRate = 0.9 #descent speed
 
         self.previousEnvironmentMap = None
         self.previousAction = None
@@ -82,11 +82,14 @@ class AgentRL(Agent):
         with open(filePath, "w") as f:
             json.dump({str(k): v for k, v in self.policy.items()}, f)
 
+    def action_failed(self):
+        pass
+
     def importJson(self, filePath):
         with open(filePath, "r") as f:
             raw = json.load(f)
             self.policy = {}
             for k, v in raw.items():
                 # eval is dangerous; safer is literal_eval
-                envmap, action = eval(k)  
+                envmap, action = eval(k)
                 self.policy[(envmap, action)] = v
