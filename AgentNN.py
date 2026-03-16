@@ -4,6 +4,7 @@ import json
 from const import *
 from Environment import Environment
 import math
+import random
 """
 Goal
     Learn from playing only, think ahead 
@@ -17,15 +18,26 @@ Each layer train the next
 """
 
 def sigmoid(x):
-        return 1/(1 + np.exp(-x))
+    return 1/(1 + np.exp(-x))
 
-def d_sigmoid_x(x):
+def d_sigmoid_x(x, providing_s=False):
+    if providing_s:
+        return x * (1-x)
     s = sigmoid(x)
     return s * (1-s)
 
+def softmax(z):
+    z = z - np.max(z)
+    exp = np.exp(z)
+    return exp / np.sum(exp)
+
+def d_softmax(y):
+    return y
+    # return np.diag(y) - np.outer(y, y)
 
 func_to_d_func = {
-    sigmoid: d_sigmoid_x
+    sigmoid: d_sigmoid_x,
+    # softmax: d_softmax
 }
 # def softmax(x):
 #     """Compute softmax values for each set of scores in x."""
@@ -34,18 +46,16 @@ func_to_d_func = {
 #     return e_x / e_x.sum(axis=0)
 
 chains = []
-np.random.seed(42)
+np.random.seed(None)
 
 networkSizes = (BOARD_WIDTH * BOARD_HEIGHT, # input(environmentRelativeArray)
                 16,
-                16,
+                32,
                 BOARD_WIDTH * BOARD_HEIGHT)
 
 neuralLayerCount = len(networkSizes) - 1 #not counting the input layer
 
 class AgentNN(Agent):
-    
-
     def __init__(self, index: int, environment : Environment):
         self.processing_functions = (
             sigmoid,
@@ -54,7 +64,9 @@ class AgentNN(Agent):
         )
         self.index = index
         self.environment = environment
-        self.learningRate = 0.01
+        self.learningRate = 0.01 #scales the amount to move in each input dimension
+        self.depreciation = 0.5
+        self.explorationRate = 0.2 #chaoticity
         super().__init__()
         self.weights = [
             np.random.randn(networkSizes[i+1], networkSizes[i]) * 0.01 
@@ -80,11 +92,16 @@ class AgentNN(Agent):
         
         :param self: Description
         :param x: Description
+
+        :return: all_x, all_z, y
         
         run through the neural network 
 
         x = self.weights @ x + b
         is the same with rewriting an array x where each element is equal to w_x * x + b
+
+        return all_x which is array of all input vectors of all layers and y (output) 
+        return all_z which is all output after processing of all layers
         """
         all_x = [x]
         all_z = []
@@ -95,20 +112,30 @@ class AgentNN(Agent):
             all_x.append(x)
         return all_x, all_z, x
 
-    def backpropagate(self, history_index, better_y):
+    def clear_history(self):
+        self.history_forwards = []
+        # self.episodeActions = []
+
+    def loss(self, y, better_y):
+        return np.sum((y - better_y)**2)
+
+    def d_loss(self, y, better_y):
+        # return 2 * (x - better_y)
+        return 2 * (y - better_y) #cross entropy
+    
+    def backpropagate(self, all_x, all_z, better_y):
         """
         return Gradient to shape the network towards goal
         d_l is change in loss, d_l_[?] represent change in loss with respect to variable ?
         """
-        all_x, all_z, action = self.history_forwards[history_index]
-        def loss(x, better_y):
-            return (x - better_y) ** 2
+        # all_x, all_z, action = self.history_forwards[history_index]
+    
+        def cross_entropy(y, target):
+            eps = 1e-12
+            return -np.sum(target * np.log(y + eps))
         
-        def d_loss(x):
-            return 2 * (better_y - x)
-        
-        d_l_f = d_loss(all_x[-1]) # this is dl/df
-        print("AgentNN: d_l_f \n", d_l_f)
+        d_l_f = self.d_loss(all_x[-1], better_y) # this is dl/df
+        # print("AgentNN: d_l_f \n", d_l_f)
         d_biases = []
         d_weights = []
         for layerIndex in range(neuralLayerCount -1, -1, -1):
@@ -118,7 +145,12 @@ class AgentNN(Agent):
             dl_x = dl_z * dz_x
             """
             z = all_z[layerIndex] # z of this layer
-            d_l_z = d_l_f * func_to_d_func[self.processing_functions[layerIndex]](z)
+            f = all_x[layerIndex+1] # f of this layer
+            # if layerIndex == neuralLayerCount -1:
+            #     pass
+            #     d_l_z = d_l_f
+            # else:
+            d_l_z = d_l_f * func_to_d_func[self.processing_functions[layerIndex]](f, providing_s=True)
 
             d_l_b = d_l_z
             d_biases.insert(0, d_l_b)
@@ -134,47 +166,64 @@ class AgentNN(Agent):
             d_l_f = d_l_x
             
             #reset d_l_[?] of previous layers
-        print("My bias: \n", d_biases)
-        
-        
-
-        # normalize
-        # total = sum(np.sum(i) for i in d_weights) + sum(np.sum(i) for i in d_biases)
-        # d_weights = [i/total for i in d_weights]
-        # d_biases = [i/total for i in d_biases]
+        # print("My bias: \n", d_biases)
         return d_weights, d_biases
     
-    def apply_learning(self, d_weights, d_biases):
+    def apply_learning(self, d_weights, d_biases, scalar = 1):
         for layerIndex in range(neuralLayerCount):
             # print("Applying learning at layer", layerIndex, "\nBias:", self.biases[layerIndex].shape, "\nWeights:", self.weights[layerIndex].shape)
             # print("dBias:", d_biases[layerIndex].shape, "\ndWeights:", self.weights[layerIndex].shape)
-            self.weights[layerIndex] += d_weights[layerIndex] * self.learningRate
-            self.biases[layerIndex] += d_biases[layerIndex] * self.learningRate
+            self.weights[layerIndex] -= d_weights[layerIndex] * self.learningRate * scalar
+            self.biases[layerIndex] -= d_biases[layerIndex] * self.learningRate * scalar
 
     def create_y_not_this(this, y, action):
-        else_scale = 9/8
-        this_scale = 7/8
-        y1 = y.copy()
-        y1 *= else_scale
-        y1[action] *= this_scale / else_scale
-        return y1
+        # else_scale = 16/8
+        # this_scale = 4/8
+        # y1 = y.copy()
+        # y1 *= else_scale
+        # y1[action] *= this_scale / else_scale
+        # return y1
+        # y1 = np.ones(len(y))
+        # y1[action] = 0
+        # y1 /= np.sum(y1)
+        # return y1
 
+        y1 = y.copy()
+        y1[action] = 0
+        #sum neutralization
+        y1 = y1 * np.sum(y) / np.sum(y1)
+        return y1
+    
     def create_y_yes_this(this, y, action):
-        else_scale = 7/8
-        this_scale = 9/8
-        y1 = y.copy()
-        y1 *= else_scale
-        y1[action] *= this_scale / else_scale
-        return y1
+        # else_scale = 4/8
+        # this_scale = 16/8
+        # y1 = y.copy()
+        # y1 *= else_scale
+        # y1[action] *= this_scale / else_scale
+        # return y1
+        # y1 = np.zeros(BOARD_WIDTH * BOARD_HEIGHT)
+        # # y1 = y.copy()
+        # y1[action] = 1
+        # return y1
 
+        y1 = y.copy()
+        y1[action] *= 2
+        #sum neutralization
+        y1 = y1 * np.sum(y) / np.sum(y1)
+        return y1
 
     def act(self):
-        # availableActions = self.environment.availableActionsInEnv()
+        availableActions = self.environment.availableActionsInEnv()
         x = np.array(self.environment.getRelativeEnv(self.index))
         all_x, all_z, y = self.forward(x)
-        action = np.argmax(y) #FIX: make it actual probability
+
+        if random.random() < self.explorationRate:
+            action = random.choice(availableActions)
+        else:
+            action = np.argmax(y)
+
         #add to learning memory
-        print("AgentNN: probability distribution =\n", y)
+        # print("AgentNN: probability distribution =\n", y)
         # self.episodeActions.append((x,y,action))
         self.history_forwards.append((all_x, all_z, action))
         return action
@@ -191,20 +240,31 @@ class AgentNN(Agent):
         better_y = self.create_y_not_this(all_x[-1], action)
 
         # backtrack, learn from invalid action
-        print("AgentNN: My bias layer is", self.biases[-1])
+        # print("AgentNN: My bias layer is", self.biases[-1])
         
-        self.apply_learning(*self.backpropagate(-1, better_y))
-        print("AgentNN: Illegal move made, refined probability=\n", better_y)
-        print("AgentNN: My bias layer is refined\n", self.biases[-1])
-
+        self.apply_learning(*self.backpropagate(all_x, all_z, better_y))
+        # print("AgentNN: Illegal move made, refined probability=\n", better_y)
+        # print("AgentNN: My bias layer is refined\n", self.biases[-1])
+        
+        #remove failed move from loggin in history
+        self.history_forwards.pop(-1)
 
     def relu(self, vector):
         return np.maximum(0,vector)
 
-    def reward(self):
-        pass
+    def reward(self, reward):
+        self.explorationRate = max(0.01, self.explorationRate * 0.999)
+        input_to_array = self.create_y_yes_this if reward >= 0 else self.create_y_not_this
+        len_history = len(self.history_forwards)
+        for history_index, history in enumerate(self.history_forwards):
+            all_x, all_z, action = history
+            # print([x.shape for x in all_x])
+            d_weights, d_biases = self.backpropagate(all_x, all_z, input_to_array(all_x[-1], action))
+            scalar = abs(reward) * (self.depreciation ** (len_history - history_index))
+            self.apply_learning(d_weights, d_biases, scalar)
+        self.clear_history()
     
-    def exportJson(self, filePath):
+    def export_json(self, filePath):
         with open(filePath, "w") as f:
             json.dump({"NN": [
                             [
@@ -214,7 +274,7 @@ class AgentNN(Agent):
                             ]
                         }, f)
 
-    def importJson(self, filePath):
+    def import_json(self, filePath):
         with open(filePath, "r") as f:
             pass
 

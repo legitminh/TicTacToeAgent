@@ -1,8 +1,21 @@
 from const import *
+from typing import overload
+
 
 class Environment:
+    @overload
+    def __init__(self, env: list[int]):
+        ...
+    
+    @overload
     def __init__(self):
-        self.reset()
+        ...
+
+    def __init__(self, env = None):
+        if env is None:
+            self.reset()
+        else:
+            self.env = [-1 if e == "_" else int(e) for e in env]
     
     def availableActionsInEnv(self):
         actions = []
