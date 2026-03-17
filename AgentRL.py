@@ -12,10 +12,11 @@ class AgentRL(Agent):
         self.explorationRate = 0.2 #chaoticity
         self.discountFactor = 0.75
         self.learningRate = 0.9 #descent speed
-        self.previousEnvironmentMap = None
-        self.previousAction = None
+        self.exploration_decay = 0.999
+        self.previous_env_map = None
+        self.previous_action = None
     
-    def getRelativeStrEnv(self):
+    def get_relative_str_env(self):
         return self.environment.environmentListToFlattenString(self.environment.getRelativeEnv(self.index))
 
     def get_policy(self, envmap, action):
@@ -29,29 +30,29 @@ class AgentRL(Agent):
         choose an action based on the current environment
         """
         #TEMPLATE
-        bestAction = None
+        best_action = None
         availableActions = self.environment.availableActionsInEnv()
         if len(availableActions)==0:
             pass
         elif random.random() < self.explorationRate:
             #exploration
-            bestAction = random.choice(availableActions) 
+            best_action = random.choice(availableActions) 
         else:
             #exploitation
             maxValue = float('-inf')
             for a in availableActions:
                 #choose the best action
-                if self.get_policy(self.getRelativeStrEnv(), a) > maxValue:
-                    maxValue = self.get_policy(self.getRelativeStrEnv(), a)
-                    bestAction = a
+                if self.get_policy(self.get_relative_str_env(), a) > maxValue:
+                    maxValue = self.get_policy(self.get_relative_str_env(), a)
+                    best_action = a
         
 
         #Teaching phase
         self.teach_previous_action()
 
-        self.previousEnvironmentMap = self.getRelativeStrEnv()
-        self.previousAction = bestAction
-        return bestAction
+        self.previous_env_map = self.get_relative_str_env()
+        self.previous_action = best_action
+        return best_action
         #TEMPLATE
     
     def teach_previous_action(self):
@@ -61,15 +62,15 @@ class AgentRL(Agent):
             Trickle down to the future!
         """
         #TEMPLATE
-        if (self.previousEnvironmentMap != None and self.previousAction  != None):
-            currentQ = self.get_policy(self.previousEnvironmentMap, self.previousAction)
+        if (self.previous_env_map != None and self.previous_action  != None):
+            currentQ = self.get_policy(self.previous_env_map, self.previous_action)
             # print("Debug teach_previous_action:",self.availableActionsInMap(self.environment.map))
-            rewardActionList = [self.get_policy(self.getRelativeStrEnv(), action) for action in self.environment.availableActionsInEnv()]
+            rewardActionList = [self.get_policy(self.get_relative_str_env(), action) for action in self.environment.availableActionsInEnv()]
             # target = sum( rewardActionList)/len(rewardActionList)
             target = max(rewardActionList) if len(rewardActionList)>0 else currentQ
             reward = 0 + self.discountFactor * target
             
-            self.policy[(self.previousEnvironmentMap, self.previousAction)] = self.lerp(currentQ,reward , self.learningRate) 
+            self.policy[(self.previous_env_map, self.previous_action)] = self.lerp(currentQ,reward , self.learningRate) 
         #TEMPLATE
 
     
@@ -78,10 +79,10 @@ class AgentRL(Agent):
         when recieve reward, lean toward it
         """
         #TEMPLATE
-        self.explorationRate *= 0.99995
-        if (self.previousEnvironmentMap  != None and self.previousAction != None):
-            currentQ = self.get_policy(self.previousEnvironmentMap, self.previousAction)
-            self.policy[(self.previousEnvironmentMap, self.previousAction)] = self.lerp(currentQ, reward , self.learningRate)
+        self.explorationRate *= self.exploration_decay
+        if (self.previous_env_map  != None and self.previous_action != None):
+            currentQ = self.get_policy(self.previous_env_map, self.previous_action)
+            self.policy[(self.previous_env_map, self.previous_action)] = self.lerp(currentQ, reward , self.learningRate)
         #TEMPLATE
     
     def lerp(self, a,b,fractionFromA):

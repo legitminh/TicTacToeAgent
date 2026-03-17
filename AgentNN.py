@@ -67,6 +67,7 @@ class AgentNN(Agent):
         self.learningRate = 0.01 #scales the amount to move in each input dimension
         self.depreciation = 0.5
         self.explorationRate = 0.2 #chaoticity
+        self.exploration_decay = 0.999
         super().__init__()
         self.weights = [
             np.random.randn(networkSizes[i+1], networkSizes[i]) * 0.01 
@@ -253,7 +254,7 @@ class AgentNN(Agent):
         return np.maximum(0,vector)
 
     def reward(self, reward):
-        self.explorationRate = max(0.01, self.explorationRate * 0.999)
+        self.explorationRate = max(0.01, self.explorationRate * self.exploration_decay)
         input_to_array = self.create_y_yes_this if reward >= 0 else self.create_y_not_this
         len_history = len(self.history_forwards)
         for history_index, history in enumerate(self.history_forwards):

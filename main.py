@@ -5,15 +5,15 @@ from Agent import Agent
 from AgentNN import AgentNN 
 from Environment import Environment
 from const import *
-from AgentRL import AgentRL
+from template.AgentRL import AgentRL
 
 class AgentHuman(Agent):
     def __init__(self, index, environment):
         self.environment = environment
         self.index = index
 
-        self.previousEnvironmentMap = None
-        self.previousAction = None
+        self.previous_env_map = None
+        self.previous_action = None
     def act(self):
         action = int(input(f"Player {self.index} what is your move?: ").strip())
         return action
@@ -197,16 +197,18 @@ def playHumanAgentNN():
     loadedAgent0.explorationRate = 0
     aGameWithHuman(loadedAgent0, 1)
 
-# if __name__ == "__main__":
-#     # trainAndExport()
-#     playHumanAgentRL()
-
 if __name__ == "__main__":
     env = Environment()
-    loadedAgent0 = AgentNN(0, env)
-    loadedAgent1 = AgentNN(1, env)
+    loadedAgent0 = AgentRL(0, env)
+    loadedAgent1 = AgentRL(1, env)
     train([loadedAgent0, loadedAgent1])
-    loadedAgent1.export_json("1_AgentNN.json")
+
+# if __name__ == "__main__":
+#     env = Environment()
+#     loadedAgent0 = AgentNN(0, env)
+#     loadedAgent1 = AgentNN(1, env)
+#     train([loadedAgent0, loadedAgent1])
+#     loadedAgent1.export_json("1_AgentNN.json")
 
 # if __name__ == "__main__":
 #     playHumanAgentNN()

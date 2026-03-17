@@ -12,14 +12,18 @@ class AgentRL(Agent):
         self.explorationRate = 0.2 #chaoticity
         self.discountFactor = 0.75
         self.learningRate = 0.9 #descent speed
-        self.previousEnvironmentMap = None
-        self.previousAction = None
+        self.exploration_decay = 0.999
+        self.previous_env_map = None
+        self.previous_action = None
     
-    def getRelativeStrEnv(self):
+    def get_relative_str_env(self):
         return self.environment.environmentListToFlattenString(self.environment.getRelativeEnv(self.index))
 
     def get_policy(self, envmap, action):
-        ...
+        if (envmap, action) not in self.policy:
+            #initialize if not existing
+            self.policy[(envmap, action)] = 0 + (random.random() - 0.5)**2
+        return self.policy[(envmap, action)]
         
     def act(self):
         """
