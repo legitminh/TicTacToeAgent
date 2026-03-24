@@ -76,7 +76,7 @@ class AgentRL(Agent):
     
     def reward(self, reward):
         """
-        when recieve reward, lean toward it
+        when receive reward, lean toward it
         """
         #TEMPLATE
         self.explorationRate *= self.exploration_decay

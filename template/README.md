@@ -1,2 +1,2 @@
-# This is the supa hard template codesmoi
+# This is the template 
 Welcome student!

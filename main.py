@@ -5,7 +5,7 @@ from Agent import Agent
 from AgentNN import AgentNN 
 from Environment import Environment
 from const import *
-from template.AgentRL import AgentRL
+from AgentRL import AgentRL
 
 class AgentHuman(Agent):
     def __init__(self, index, environment):
@@ -197,11 +197,11 @@ def playHumanAgentNN():
     loadedAgent0.explorationRate = 0
     aGameWithHuman(loadedAgent0, 1)
 
-if __name__ == "__main__":
-    env = Environment()
-    loadedAgent0 = AgentRL(0, env)
-    loadedAgent1 = AgentRL(1, env)
-    train([loadedAgent0, loadedAgent1])
+# if __name__ == "__main__":
+#     env = Environment()
+#     loadedAgent0 = AgentRL(0, env)
+#     loadedAgent1 = AgentRL(1, env)
+#     train([loadedAgent0, loadedAgent1])
 
 # if __name__ == "__main__":
 #     env = Environment()
@@ -210,5 +210,8 @@ if __name__ == "__main__":
 #     train([loadedAgent0, loadedAgent1])
 #     loadedAgent1.export_json("1_AgentNN.json")
 
+if __name__ == "__main__":
+    playHumanAgentNN()
+
 # if __name__ == "__main__":
-#     playHumanAgentNN()
+#     playHumanAgentRL()
