@@ -20,7 +20,7 @@ class AgentHuman(Agent):
     def action_failed(self):
         print("Invalid action")
 
-def train(agents): 
+def train(agents, episodes): 
     """
     train two agents against each other
     """
@@ -30,8 +30,8 @@ def train(agents):
     # accuracy measurement
     winCountByPlayer = [0] * 2
     winCounts = []
-    EPISODES =50000
-    NUMBER_OF_REPORTS = 16
+    EPISODES = episodes
+    NUMBER_OF_REPORTS = 32
     ROUND_REPORT_WINDOW = EPISODES // NUMBER_OF_REPORTS
     for i in range(EPISODES):
         # make them one game
@@ -59,6 +59,7 @@ def train(agents):
         
         # give rewards
         winner = env.checkWin()
+        debug_response = {}
         for agent in agents:
             if winner == agent.index:
                 agent_reward = 1
@@ -66,7 +67,7 @@ def train(agents):
                 agent_reward = 0
             else:
                 agent_reward = -1
-            agent.reward(agent_reward)
+            debug_response[agent.index]=agent.reward(agent_reward)
 
         # record result
         if winner != None:
@@ -74,14 +75,17 @@ def train(agents):
         winCounts.append(sum(winCountByPlayer))
         if (i % ROUND_REPORT_WINDOW == 0):
             print(f"episode {i} env = {env.toFlattenString()} winner = {winner}")
+            for agent_index, debug_response_x in debug_response.items():
+                if debug_response_x:
+                    print(agent_index, debug_response_x)
 
     # summary
     print("probability of non-ties (sub-optimal) sampling report")
     WINDOW_SIZE = ROUND_REPORT_WINDOW
     for i in range(len(winCounts) - WINDOW_SIZE):
         if (i % WINDOW_SIZE == 0):
-            print((winCounts[i+WINDOW_SIZE] - winCounts[i])/WINDOW_SIZE)
-    print("WinByPlayer:", winCountByPlayer, "ties:" ,EPISODES - sum(winCountByPlayer))
+            print((winCounts[i + WINDOW_SIZE] - winCounts[i]) / WINDOW_SIZE)
+    print("WinByPlayer:", winCountByPlayer, "ties:" , EPISODES - sum(winCountByPlayer))
 
 def trainAndExport():
     """
@@ -191,27 +195,35 @@ def playHumanAgentRL():
 
 def playHumanAgentNN():
     env = Environment()
-    loadedAgent0 = AgentRL(0, env)
-    loadedAgent0.import_json("0_AgentNN.json")
+    loadedAgent0 = AgentNN(0, env)
+    loadedAgent0.import_json("1_AgentNN.json")
     #Enforce best behaviour
     loadedAgent0.explorationRate = 0
     aGameWithHuman(loadedAgent0, 1)
 
+if __name__ == "__main__":
+    env = Environment()
+    loadedAgent0 = AgentRL(0, env)
+    loadedAgent1 = AgentRL(1, env)
+    train([loadedAgent0, loadedAgent1],500000)
+    loadedAgent0.export_json("0_AgentRL.json")
+    loadedAgent1.export_json("1_AgentRL.json")
+
 # if __name__ == "__main__":
 #     env = Environment()
 #     loadedAgent0 = AgentRL(0, env)
-#     loadedAgent1 = AgentRL(1, env)
-#     train([loadedAgent0, loadedAgent1])
+#     loadedAgent0.import_json("0_AgentRL.json")
+
+#     loadedAgent1 = AgentNN(1, env)
+#     train([loadedAgent0, loadedAgent1], 2000000)
+#     loadedAgent1.export_json("1_AgentNN.json")
 
 # if __name__ == "__main__":
 #     env = Environment()
 #     loadedAgent0 = AgentNN(0, env)
 #     loadedAgent1 = AgentNN(1, env)
-#     train([loadedAgent0, loadedAgent1])
+#     train([loadedAgent0, loadedAgent1], 2000000)
 #     loadedAgent1.export_json("1_AgentNN.json")
-
-if __name__ == "__main__":
-    playHumanAgentNN()
 
 # if __name__ == "__main__":
 #     playHumanAgentRL()

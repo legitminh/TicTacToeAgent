@@ -5,9 +5,8 @@ About learning:
     When an agent recieves a rewards, it will update its policy.
 """
 class Agent(ABC):
-    @property
     @abstractmethod
-    def act(self):
+    def act(self) -> int:
         pass
     
     @abstractmethod

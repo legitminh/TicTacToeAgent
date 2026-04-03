@@ -6,15 +6,7 @@ from Environment import Environment
 class AgentRL(Agent):
     def __init__(self, index : int, environment : Environment):
         self.environment = environment
-        self.policy = {}
-        self.play = []
         self.index = index
-        self.explorationRate = 0.5 #chaoticity
-        self.discountFactor = 0.75
-        self.learningRate = 0.1 #descent speed
-        self.exploration_decay = 0.9995
-        self.previous_env_map = None
-        self.previous_action = None
     
     def get_relative_str_env(self):
         return self.environment.environmentListToFlattenString(self.environment.getRelativeEnv(self.index))
